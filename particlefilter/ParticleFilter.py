@@ -33,6 +33,17 @@ class ParticleFilter():
         # boolean mask tracking which particles have been within fusion range
         self.seen_particles = np.zeros(self.num_particles, dtype=bool)
 
+    def get_heatmap(self, subsampling_factor=2):
+        normalized_weights = self.particle_weights / np.sum(self.particle_weights)
+        heatmap, xedges, yedges = np.histogram2d(
+            self.particle_locations[:,0],
+            self.particle_locations[:,1],
+            weights=normalized_weights,
+            bins=subsampling_factor*self.world_size,
+            range=[[0, self.world_size[0]], [0, self.world_size[1]]])
+
+        return heatmap
+
     def step(self, reading, sensor_location):
         """Update the particle filter with a new sensor reading. Requires a known sensor location."""
         # Get readings from particles

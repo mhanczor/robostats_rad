@@ -52,15 +52,13 @@ for t in range(300):
 
     # sensor_location += [0.06, 0.05+np.cos(t)/2]
     # sensor_location = np.random.randint(low=0, high=w, size=[1,2])
-    heatmap, xedges, yedges = np.histogram2d(particle_filter.particle_locations[:,0],
-                                             particle_filter.particle_locations[:,1],
-        weights=particle_filter.particle_weights,
-        bins=2*world_size,
-        range=[[0, world_size[0]], [0, world_size[1]]])
 
+    # Choose next location weighted by particle density
+    subsampling_factor = 2
+    heatmap = particle_filter.get_heatmap(subsampling_factor)
     ind = np.random.choice(heatmap.size, size=1, p=heatmap.ravel())
     coord = np.unravel_index(ind, heatmap.shape)
-    world_coord = np.array(coord) / 2
+    world_coord = np.array(coord) / subsampling_factor
 
     sensor_location = world_coord.reshape([1,2])
 
