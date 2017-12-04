@@ -34,6 +34,15 @@ class ParticleFilter():
         self.seen_particles = np.zeros(self.num_particles, dtype=bool)
 
     def get_heatmap(self, subsampling_factor=2):
+        """
+        Get an array representing particle density in the world, weighted by particle weight.
+
+        Inputs:
+            subsampling_factor - How many times to divide each world unit.
+
+        Output:
+            heatmap - subsampling_factor * world_size float array
+        """
         normalized_weights = self.particle_weights / np.sum(self.particle_weights)
         heatmap, xedges, yedges = np.histogram2d(
             self.particle_locations[:,0],
@@ -54,7 +63,13 @@ class ParticleFilter():
         return means, covariances
 
     def step(self, reading, sensor_location):
-        """Update the particle filter with a new sensor reading. Requires a known sensor location."""
+        """
+        Update the particle filter with a new sensor reading. Requires a known sensor location.
+
+        Inputs:
+            reading - integer radiation count
+            sensor_location - [1 x 2] float array. Note this has to be two dimensional.
+        """
         # Get readings from particles
         particle_distance_sq = distance.cdist(sensor_location, self.particle_locations, 'sqeuclidean')
         particle_expected_intensity = self.particle_strength / (1 + particle_distance_sq)
@@ -124,7 +139,7 @@ class ParticleFilter():
         # Border
         ax.add_patch(plt.Rectangle((0,0), self.world_size[0], self.world_size[1], fill=False))
         ax.axis('equal')
-        ax.axis([-1, self.world_size[1]+1, -1, self.world_size[0]+1])
+        ax.axis([-1, self.world_size[0]+1, -1, self.world_size[1]+1])
 
         # Particles
         ax.scatter(self.particle_locations[:,0], self.particle_locations[:,1], s=scaled_weights, c='k')
