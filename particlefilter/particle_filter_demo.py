@@ -40,6 +40,9 @@ particle_filter = ParticleFilter.ParticleFilter(
     num_particles=num_particles,
     fusion_range=fusion_range)
 
+particle_filter.render(sensor_location, source_locations)
+plt.pause(1)
+
 # Take a reading
 for t in range(300):
     source_dist_sq = distance.cdist(sensor_location, source_locations, 'sqeuclidean')
@@ -64,4 +67,5 @@ for t in range(300):
 
     plt.pause(.01)
 
-plt.pause(25)
+plt.ioff()
+plt.show()
