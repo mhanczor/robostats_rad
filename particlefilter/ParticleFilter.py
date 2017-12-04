@@ -44,6 +44,15 @@ class ParticleFilter():
 
         return heatmap
 
+    def fit_gaussian(self, num_sources, use_only_seen_particles=True):
+        """Fit a guassian mixture model to the data. Returns the means and covariances."""
+        particles = self.particle_locations[self.seen_particles] if use_only_seen_particles else self.particle_locations
+        gmm = mixture.GaussianMixture(n_components=num_sources, covariance_type='full').fit(particles)
+        means = gmm.means_
+        covariances = gmm.covariances_
+
+        return means, covariances
+
     def step(self, reading, sensor_location):
         """Update the particle filter with a new sensor reading. Requires a known sensor location."""
         # Get readings from particles
@@ -129,21 +138,22 @@ class ParticleFilter():
         if source_locations is not None and np.sum(self.seen_particles) > 2:
             # Fit GMM and render as ellipses
             num_sources = len(source_locations)
-            gmm = mixture.GaussianMixture(n_components=num_sources, covariance_type='full') \
-                .fit(self.particle_locations[self.seen_particles])
-            # draw_em(gmm.means_, gmm.covariances_)
-            means = gmm.means_
-            covariances = gmm.covariances_
+            means, covariances = self.fit_gaussian(num_sources, use_only_seen_particles=True)
+
             ax.scatter(means[:,0], means[:,1], c='c', marker='x')
             for i, (mean, covar) in enumerate(zip(means, covariances)):
                 v, w = linalg.eigh(covar)
                 v = 2. * np.sqrt(2.) * np.sqrt(v)
                 u = w[0] / linalg.norm(w[0])
 
+                if np.max(v) < 3:
+                    color = 'c'
+                else:
+                    color = 'y'
                 # Plot an ellipse to show the Gaussian component
                 angle = np.arctan(u[1] / u[0])
                 angle = 180. * angle / np.pi  # convert to degrees
-                ell = mpl.patches.Ellipse(mean, v[0], v[1], 180. + angle, color='c')
+                ell = mpl.patches.Ellipse(mean, v[0], v[1], 180. + angle, color=color)
                 ell.set_clip_box(ax.bbox)
                 ell.set_alpha(0.5)
                 ax.add_artist(ell)
