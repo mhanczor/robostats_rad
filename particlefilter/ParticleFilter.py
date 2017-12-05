@@ -117,7 +117,7 @@ class ParticleFilter():
         self.particle_strength[fusion_inliers_idx]  += np.random.normal(0.0, 0.1, num_fusion_inliers)
         self.particle_strength = np.maximum(0, self.particle_strength)
 
-    def render(self, sensor_location=None, source_locations=None):
+    def render(self, sensor_location=None, source_locations=None, render_heatmap=True):
         """Render the particle filter. Returns the figure object."""
 
         # Normalize weights
@@ -129,12 +129,13 @@ class ParticleFilter():
         ax = plt.gca()
 
         # Heat map
-        subsampling_factor = 2
-        heatmap, xedges, yedges = np.histogram2d(self.particle_locations[:,0], self.particle_locations[:,1],
-            weights=scaled_weights, bins=subsampling_factor*self.world_size,
-            range=[[0, self.world_size[0]], [0, self.world_size[1]]])
-        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-        ax.imshow(heatmap.T, extent=extent, origin='lower')
+        if render_heatmap:
+            subsampling_factor = 2
+            heatmap, xedges, yedges = np.histogram2d(self.particle_locations[:,0], self.particle_locations[:,1],
+                weights=scaled_weights, bins=subsampling_factor*self.world_size,
+                range=[[0, self.world_size[0]], [0, self.world_size[1]]])
+            extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+            ax.imshow(heatmap.T, extent=extent, origin='lower')
 
         # Border
         ax.add_patch(plt.Rectangle((0,0), self.world_size[0], self.world_size[1], fill=False))
