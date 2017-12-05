@@ -13,8 +13,8 @@ from gym.utils import seeding
 from gym import utils, spaces
 import gym
 
-import Box2D
-from Box2D.b2 import (edgeShape, circleShape, fixtureDef, polygonShape, revoluteJointDef, contactListener)
+#import Box2D
+#from Box2D.b2 import (edgeShape, circleShape, fixtureDef, polygonShape, revoluteJointDef, contactListener)
 from particlefilter.ParticleFilter import ParticleFilter
 
 
@@ -132,7 +132,10 @@ class RadRoomSimple(gym.Env):
 
     def render(self, mode='human', close=False):
         # Need to actually get the class instance to call render
-        self.PF.render(sensor_location=self.loc, source_locations=self.sources)
+        if close:
+            plt.close()
+        else:
+            self.PF.render(sensor_location=self.loc, source_locations=self.sources)
 
     def get_reading(self):
         indv_reading = self.strengths / (1 + self.dist(self.sources, self.loc))

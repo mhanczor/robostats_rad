@@ -16,4 +16,4 @@ env.reset()
 
 for _ in range(100):
     obs, reward, done = env.step(env.action_space.sample())
-#    env.render()
+    env.render()
