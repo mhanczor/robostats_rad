@@ -61,8 +61,8 @@ class RadRoomSimple(gym.Env):
             self.sources[i,1] = self.np_random.uniform(0, self.bounds[1])
 
         # RESET THE PARTICLE FILTER
-        self.PF = ParticleFilter(min_particle_strength=np.min(self.strengths),
-            max_particle_strength=np.max(self.strengths),
+        self.PF = ParticleFilter(min_particle_strength=0.5*np.min(self.strengths),
+            max_particle_strength=1.5*np.max(self.strengths),
             num_sources=self.num_sources,
             world_size=self.bounds)
 
@@ -138,7 +138,7 @@ class RadRoomSimple(gym.Env):
 
     def get_reading(self):
         indv_reading = self.strengths / (1 + self.dist(self.sources, self.loc))
-        self.reading = np.sum(indv_reading)
+        self.reading = np.round(np.sum(indv_reading)) # round to integer detection count
 
     def dist(self, p1, p2):
         return distance.cdist(p1, p2)
