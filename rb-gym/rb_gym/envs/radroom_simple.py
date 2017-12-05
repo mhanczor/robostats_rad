@@ -1,7 +1,6 @@
 import sys
 
 import matplotlib.pyplot as plt
-plt.ion()
 
 import numpy as np
 from six import StringIO, b
@@ -24,7 +23,7 @@ MOVERR = 0.1 # Std Dev of the movements
 
 class RadRoomSimple(gym.Env):
 
-    def __init__(self, world_size=100, num_sources=1, strength=100, seed=None, vis=False, max_iters=100, map_sub=1):
+    def __init__(self, world_size=20, num_sources=1, strength=100, seed=None, vis=False, max_iters=100, map_sub=1):
         self._seed(seed)
         self.num_sources = num_sources
         self.vis = vis
