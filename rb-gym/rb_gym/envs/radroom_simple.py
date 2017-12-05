@@ -106,6 +106,13 @@ class RadRoomSimple(gym.Env):
         self.PF.step(self.reading, np.atleast_2d(self.loc))
         # Return the heatmap of particles
         heatmap = self.PF.get_heatmap(subsampling_factor=self.map_sub)
+        # Create 'heatmap' of robot location
+        loc_map = np.zeros_like(heatmap)
+        int_location = np.floor(self.map_sub * self.loc).ravel()
+        loc_map[int_location[0], int_location[1]] = 1
+
+        # Create Observation
+        obs = np.stack((heatmap, loc_map), -1)
 
         # Get reward
         reward += -0.3 # Cost of living
@@ -137,8 +144,6 @@ class RadRoomSimple(gym.Env):
             #check our predictions and get the reward
             self.done = True
 
-        obs = heatmap
-        #obs = map? mean and xy location? (probably map since that will work best for A2C input)
         return obs, reward, self.done
 
 
