@@ -1,5 +1,8 @@
 import sys
 
+import matplotlib.pyplot as plt
+plt.ion()
+
 import numpy as np
 from six import StringIO, b
 import math
@@ -21,12 +24,15 @@ MOVERR = 0.1 # Std Dev of the movements
 
 class RadRoomSimple(gym.Env):
 
-    def __init__(self, world_size=100, num_sources=1, strength=100, seed=None, vis=False):
+    def __init__(self, world_size=100, num_sources=1, strength=100, seed=None, vis=False, max_iters=100, map_sub=1):
         self._seed(seed)
         self.num_sources = num_sources
         self.vis = vis
         self.strengths = np.ones((num_sources, 1)) * strength
-        self.bounds = np.array((world_size, world_size), ndmin=2) # min and max of the world
+        self.bounds = np.array((world_size, world_size)) # min and max of the world
+        self.max_steps = max_iters
+
+        self.map_sub = map_sub # Subsampling factor for the heatmap
 
         self.sources = np.zeros((num_sources, 2)) # x-loc, y-loc
         self.rad_counts = 0.
@@ -43,6 +49,7 @@ class RadRoomSimple(gym.Env):
     def _reset(self):
 
         self.reading = 0. # radiation count reading
+        self.steps = 0
         self.loc = np.zeros((1,2)) # X, Y location
         self.heading = 0. # Direction the bot is facing
         self.done = False
@@ -51,8 +58,8 @@ class RadRoomSimple(gym.Env):
 
         # Set the source locations [s,x,y]
         for i in range(self.num_sources):
-            self.sources[i,0] = self.np_random.uniform(0, self.bounds[0][0])
-            self.sources[i,1] = self.np_random.uniform(0, self.bounds[0][1]) 
+            self.sources[i,0] = self.np_random.uniform(0, self.bounds[0])
+            self.sources[i,1] = self.np_random.uniform(0, self.bounds[1])
 
         # RESET THE PARTICLE FILTER
         self.PF = ParticleFilter(min_particle_strength=np.min(self.strengths),
@@ -63,21 +70,22 @@ class RadRoomSimple(gym.Env):
     def _step(self, action):
 
         reward = 0.
+        self.steps += 1
 
         # Move the robot
-        error = self.np_random.normal(0, MOVERR, (1,2)) # 0-mean error
+        error = self.np_random.normal(0, MOVERR) # 0-mean error
 
         if action == 0:
             # Heading does not change
-            self.loc += move(error)
+            self.loc += self.move(error)
         elif action == 1:
             # Rotate CCW and drive forward
             self.heading -= (45. + error * 5)
-            self.loc += move(error)
+            self.loc += self.move(error)
         elif action == 2:
             # Rotate CW and drive forward
             self.heading += (20. + error * 5)
-            self.loc += move(error)
+            self.loc += self.move(error)
         elif action == 3:
             # Rotate CCW
             self.heading -= (20. + error * 5)
@@ -91,9 +99,10 @@ class RadRoomSimple(gym.Env):
         # Get a radiation reading from the sources
         self.get_reading()
 
-        # GET FEEDBACK FROM THE PARTICLE FILTER
+        # Update the particle filter
         self.PF.step(self.reading, np.atleast_2d(self.loc))
-        # NEED MAP/PROBABILITIES THAT ARE USED FOR OBSERVATION AND REWARD
+        # Return the heatmap of particles
+        heatmap = self.PF.get_heatmap(subsampling_factor=self.map_sub)
 
         # Get reward
         reward += -0.3 # Cost of living
@@ -103,32 +112,31 @@ class RadRoomSimple(gym.Env):
 
         # if all the sources have been found, then done
 
+        # if we've reached the iteration limit then done
         if self.steps > self.max_steps:
             #check our predictions and get the reward
             self.done = True
 
-        # if all the sources have been found, then done
-        
-
+        obs = heatmap
         #obs = map? mean and xy location? (probably map since that will work best for A2C input)
-        return observations, reward, done
+        return obs, reward, self.done
 
 
     def move(self, error):
-        x = math.cos((PI/180.) * self.heading) * STEPSIZE
-        y = math.sin((PI/180.) * self.heading) * STEPSIZE
+        x = math.cos((PI/180.) * self.heading) * STEPSIZE * error
+        y = math.sin((PI/180.) * self.heading) * STEPSIZE * error
         return np.array((x, y))
 
     def generate_map(self):
         pass
 
-    def _render(self):
+    def render(self, mode='human', close=False):
         # Need to actually get the class instance to call render
-        self.PF.render(source_location=self.loc, particle_location=self.sources)
+        self.PF.render(sensor_location=self.loc, source_locations=self.sources)
 
     def get_reading(self):
         indv_reading = self.strengths / (1 + self.dist(self.sources, self.loc))
         self.reading = np.sum(indv_reading)
 
-    def dist(p1, p2):
+    def dist(self, p1, p2):
         return distance.cdist(p1, p2)
