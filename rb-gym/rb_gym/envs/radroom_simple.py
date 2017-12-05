@@ -38,7 +38,7 @@ class RadRoomSimple(gym.Env):
         self.sources = np.zeros((num_sources, 2)) # x-loc, y-loc
         self.rad_counts = 0.
         self.action_space = spaces.Discrete(4) # Forward, Diag-Left, Diag-Right, Rot-CCW, Rot-CW
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(world_size, world_size, 1))
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(world_size, world_size, 2))
 
         self.cov_thresh = 3.0 # point where we consider a fit guassian a prediction
 
@@ -73,8 +73,9 @@ class RadRoomSimple(gym.Env):
             world_size=self.bounds)
 
         heatmap = self.PF.get_heatmap(subsampling_factor=self.map_sub)
+        obs = self.append_map(heatmap)
 
-        obs = np.atleast_3d(heatmap)
+        obs = np.atleast_3d(obs)
 
         return obs
 
@@ -114,15 +115,7 @@ class RadRoomSimple(gym.Env):
         self.PF.step(self.reading, np.atleast_2d(self.loc))
         # Return the heatmap of particles
         heatmap = self.PF.get_heatmap(subsampling_factor=self.map_sub)
-        # Create 'heatmap' of robot location
-        loc_map = np.zeros_like(heatmap)
-        int_location = np.floor(self.map_sub * self.loc).ravel().astype(np.int)
-        if int_location[0] == self.bounds[0]: int_location -= 1
-        if int_location[1] == self.bounds[1]: int_location -= 1
-        loc_map[int_location[0], int_location[1]] = 1
-
-        # Create Observation
-        obs = np.stack((heatmap, loc_map), -1)
+        obs = self.append_map(heatmap)
 
         # Get reward
         reward += -0.3 # Cost of living
@@ -151,7 +144,7 @@ class RadRoomSimple(gym.Env):
             self.done = True
 
 
-        obs = np.atleast_3d(heatmap)
+        obs = np.atleast_3d(obs)
 
         if type(reward).__module__ == np.__name__:
             reward = np.asscalar(reward)
@@ -183,3 +176,15 @@ class RadRoomSimple(gym.Env):
 
     def dist(self, p1, p2):
         return distance.cdist(p1, p2)
+    
+    def append_map(self, heatmap):
+        # Create 'heatmap' of robot location
+        loc_map = np.zeros_like(heatmap)
+        int_location = np.floor(self.map_sub * self.loc).ravel().astype(np.int)
+        if int_location[0] == self.bounds[0]: int_location -= 1
+        if int_location[1] == self.bounds[1]: int_location -= 1
+        loc_map[int_location[0], int_location[1]] = 1
+
+        # Create Observation
+        obs = np.stack((heatmap, loc_map), -1)
+        return obs

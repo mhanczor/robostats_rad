@@ -6,8 +6,13 @@ from baselines.common import set_global_seeds
 from baselines import bench
 from a2c import learn, Model, Runner
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from baselines.common.atari_wrappers import make_atari, wrap_deepmind
+#from baselines.common.atari_wrappers import make_atari, wrap_deepmind
 from policies import CnnPolicy, LstmPolicy, RadLstmPolicy
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+#plt.ion()
 
 
 def train(env_id, num_timesteps, seed, policy, lrschedule, num_cpu):
@@ -34,7 +39,7 @@ def train(env_id, num_timesteps, seed, policy, lrschedule, num_cpu):
    env.close()
 
 
-def load_model(load_path, policy, env_id, seed=0, num_procs=1, nenvs=1, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-3, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=100):
+def load_model(load_path, policy, env_id, seed=0, num_procs=1, nenvs=1, nsteps=5, nstack=1, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-3, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=100):
 
     env = gym.make(env_id)
     env.seed(seed)
@@ -50,7 +55,7 @@ def load_model(load_path, policy, env_id, seed=0, num_procs=1, nenvs=1, nsteps=5
 
     env.num_envs = 1
     tf.reset_default_graph()
-    set_global_seeds(seed)
+#    set_global_seeds(seed)
 
     ob_space = env.observation_space
     ac_space = env.action_space
@@ -63,21 +68,37 @@ def load_model(load_path, policy, env_id, seed=0, num_procs=1, nenvs=1, nsteps=5
     return env, model
 
 def play(env_id, num_timesteps, policy, load_path=None):
+    
+    def update_obs(observ):
+        # Do frame-stacking here instead of the FrameStack wrapper to reduce
+        # IPC overhead
+#        nc = 2
+#        observ = np.roll(observ, shift=-nc, axis=3)
+#        observ[:, :, :, -nc:] = observ
+        observ = np.expand_dims(observ, axis=0)
+        return observ
 
     env, model = load_model(load_path, policy, env_id)
     obs = env.reset()
+    obs = update_obs(obs)
     states = model.initial_state
-    done = False
+    dones = False
+    
     for _ in range(num_timesteps):
         env.render()
+        plt.show()
         # obs, states, rewards, masks, actions, values = runner.run()
-        actions, values, states = model.step(obs, states, done)
+        actions, values, states = model.step(obs, states, [dones])
         obs, rewards, dones, _ = env.step(actions)
+        obs = update_obs(obs)
 
         if dones:
             break
-
-    env.close()
+        
+    env.render()
+    plt.show()
+#    plt.pause(2)
+#    env.close()
 
 
 def main():
@@ -88,12 +109,12 @@ def main():
     parser.add_argument('--filepath', help='Model Filepath', default='/home/hades/Documents/Robo_Stats/Final_Project/radbot_gym/saved_models/atari_saved.model')
     parser.add_argument('--policy', help='Policy architecture', choices=['cnn', 'lstm', 'radlstm'], default='radlstm')
     parser.add_argument('--lrschedule', help='Learning rate schedule', choices=['constant', 'linear'], default='constant')
-    parser.add_argument('--num-timesteps', type=int, default=int(1e3))
-    parser.add_argument('--mode', help='Mode', choices=['train', 'play'], default='train')
+    parser.add_argument('--num-timesteps', type=int, default=int(1e4))
+    parser.add_argument('--mode', help='Mode', choices=['train', 'play'], default='play')
     args = parser.parse_args()
 
     if args.mode == 'train':
-        train(args.env, args.num_timesteps, seed=0, policy=args.policy, lrschedule=args.lrschedule, num_cpu=2)
+        train(args.env, args.num_timesteps, seed=0, policy=args.policy, lrschedule=args.lrschedule, num_cpu=8)
     elif args.mode == 'play':
         play(args.env, args.num_timesteps, policy=args.policy, load_path=args.filepath)
 
