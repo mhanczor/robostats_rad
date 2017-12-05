@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 class ParticleFilter():
-    def __init__(self, min_particle_strength, max_particle_strength, num_sources, world_size=20, num_particles=500, fusion_range=3):
+    def __init__(self, min_particle_strength, max_particle_strength, num_sources, world_size=20, num_particles=5000, fusion_range=5):
         """
         For reference, I used min_particle_strength = 0.5 min(source_strength),
         max_particle_strength = 1.5 max(source_strength)

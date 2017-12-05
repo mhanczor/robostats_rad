@@ -25,7 +25,7 @@ MOVERR = STEPSIZE / 10 # Std Dev of the movements
 
 class RadRoomSimple(gym.Env):
 
-    def __init__(self, world_size=20, num_sources=1, strength=100, seed=None, vis=False, max_iters=100, map_sub=1):
+    def __init__(self, world_size=20, num_sources=1, strength=100, seed=None, vis=False, max_iters=300, map_sub=1):
         self._seed(seed)
         self.num_sources = num_sources
         self.vis = vis
@@ -38,6 +38,7 @@ class RadRoomSimple(gym.Env):
         self.sources = np.zeros((num_sources, 2)) # x-loc, y-loc
         self.rad_counts = 0.
         self.action_space = spaces.Discrete(4) # Forward, Diag-Left, Diag-Right, Rot-CCW, Rot-CW
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(world_size, world_size, 1))
 
         self.cov_thresh = 3.0 # point where we consider a fit guassian a prediction
 
@@ -56,6 +57,7 @@ class RadRoomSimple(gym.Env):
         self.loc = np.zeros((1,2)) # X, Y location
         self.heading = 0. # Direction the bot is facing
         self.done = False
+#        print('resest')
 
         self.strengths += self.np_random.uniform(-10, 10, self.num_sources)
 
@@ -69,6 +71,12 @@ class RadRoomSimple(gym.Env):
             max_particle_strength=1.5*np.max(self.strengths),
             num_sources=self.num_sources,
             world_size=self.bounds)
+
+        heatmap = self.PF.get_heatmap(subsampling_factor=self.map_sub)
+
+        obs = np.atleast_3d(heatmap)
+
+        return obs
 
     def _step(self, action):
 
@@ -108,7 +116,7 @@ class RadRoomSimple(gym.Env):
         heatmap = self.PF.get_heatmap(subsampling_factor=self.map_sub)
         # Create 'heatmap' of robot location
         loc_map = np.zeros_like(heatmap)
-        int_location = np.floor(self.map_sub * self.loc).ravel()
+        int_location = np.floor(self.map_sub * self.loc).ravel().astype(np.int)
         loc_map[int_location[0], int_location[1]] = 1
 
         # Create Observation
@@ -136,15 +144,20 @@ class RadRoomSimple(gym.Env):
             # compute distance
             dist = np.linalg.norm(pred_nn - source_nn, keepdims=True)
             # reward for each source decays with distance from source as a gaussian
-            reward += gaussian(0,self.cov_thresh).pdf(dist) / self.num_sources
-
-
-        # if we've reached the iteration limit then done
-        if self.steps > self.max_steps:
-            #check our predictions and get the reward
+            reward += 100 * gaussian(0,self.cov_thresh).pdf(dist) / self.num_sources
+            # Stop running
             self.done = True
 
-        return obs, reward, self.done
+
+        obs = np.atleast_3d(heatmap)
+
+        if type(reward).__module__ == np.__name__:
+            reward = np.asscalar(reward)
+
+
+        #obs = map? mean and xy location? (probably map since that will work best for A2C input)
+
+        return obs, reward, self.done, {}
 
 
     def move(self, error):

@@ -17,6 +17,10 @@ env = gym.make('RadRoomSimple-v0')
 env.reset()
 
 for _ in range(100):
-    obs, reward, done = env.step(env.action_space.sample())
+    obs, reward, done,_ = env.step(env.action_space.sample())
     env.render()
     plt.pause(0.01)
+    if done:
+        break
+
+plt.pause(20)
