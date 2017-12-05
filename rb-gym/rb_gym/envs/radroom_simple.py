@@ -79,18 +79,18 @@ class RadRoomSimple(gym.Env):
             self.loc += self.move(error)
         elif action == 1:
             # Rotate CCW and drive forward
-            self.heading -= (45. + error * 5)
+            self.heading += (45. + error * 5)
             self.loc += self.move(error)
         elif action == 2:
             # Rotate CW and drive forward
-            self.heading += (20. + error * 5)
+            self.heading -= (20. + error * 5)
             self.loc += self.move(error)
         elif action == 3:
             # Rotate CCW
-            self.heading -= (20. + error * 5)
+            self.heading += (20. + error * 5)
         elif action == 4:
             # Rotate CW
-            self.heading += (20. + error * 5)
+            self.heading -= (20. + error * 5)
 
         # Confine the robot to the world bounds
         self.loc = np.clip(self.loc, 0, self.bounds)
@@ -122,8 +122,8 @@ class RadRoomSimple(gym.Env):
 
 
     def move(self, error):
-        x = math.cos((PI/180.) * self.heading) * STEPSIZE * error
-        y = math.sin((PI/180.) * self.heading) * STEPSIZE * error
+        x = math.cos((PI/180.) * self.heading) * (STEPSIZE + error)
+        y = math.sin((PI/180.) * self.heading) * (STEPSIZE + error)
         return np.array((x, y))
 
     def generate_map(self):
