@@ -6,6 +6,7 @@ import numpy as np
 from six import StringIO, b
 import math
 from scipy.spatial import distance
+from scipy.stats import norm as gaussian
 
 #gym utils has seeding
 from gym.utils import seeding
@@ -15,6 +16,7 @@ import gym
 #import Box2D
 #from Box2D.b2 import (edgeShape, circleShape, fixtureDef, polygonShape, revoluteJointDef, contactListener)
 from particlefilter.ParticleFilter import ParticleFilter
+import util as util
 
 
 STEPSIZE = .5
@@ -36,6 +38,8 @@ class RadRoomSimple(gym.Env):
         self.sources = np.zeros((num_sources, 2)) # x-loc, y-loc
         self.rad_counts = 0.
         self.action_space = spaces.Discrete(4) # Forward, Diag-Left, Diag-Right, Rot-CCW, Rot-CW
+
+        self.cov_thresh = 3.0 # point where we consider a fit guassian a prediction
 
     def _destroy(self):
         # This will reset the graphics or get rid of objects from the world
@@ -108,8 +112,25 @@ class RadRoomSimple(gym.Env):
 
         # If there is a high probability of the source being at a location
         # make a prediction, see how far it is from the nearest source ( there can only be one per source??) and then get a score based on that
+        prediction_made = True
+        means, covariances = self.PF.fit_gaussian(self.num_sources)
+        for covar in covariances:
+            v = np.linalg.eigvals(covar)
+            v = 2 * np.sqrt(2*v)
 
-        # if all the sources have been found, then done
+            if np.max(v) > self.cov_thresh:
+                prediction_made = False
+                break
+
+        # Make a prediction if all covariances are small, or we reached max_steps
+        if prediction_made or self.steps > self.max_steps:
+            # match each prediction with nearest source, without replacement
+            pred_nn, source_nn = util.greedy_nearest_neighbor(means, self.sources)
+            # compute distance
+            dist = np.linalg.norm(pred_nn - source_nn, keepdims=True)
+            # reward for each source decays with distance from source as a gaussian
+            reward += gaussian(0,self.cov_thresh).pdf(dist) / self.num_sources
+
 
         # if we've reached the iteration limit then done
         if self.steps > self.max_steps:
