@@ -93,7 +93,7 @@ class RadRoomSimple(gym.Env):
             self.heading += (20. + error * 5)
 
         # Confine the robot to the world bounds
-        np.clip(self.loc, 0, self.bounds)
+        self.loc = np.clip(self.loc, 0, self.bounds)
 
         # Get a radiation reading from the sources
         self.get_reading()

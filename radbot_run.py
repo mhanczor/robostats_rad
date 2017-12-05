@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, logging, gym
+import os, logging, gym, rb_gym
 import tensorflow as tf
 from baselines import logger
 from baselines.common import set_global_seeds
@@ -13,8 +13,8 @@ def train(env_id, num_timesteps, seed, policy, lrschedule, num_cpu):
    def make_env(rank):
        env = gym.make(env_id)
        env.seed(seed + rank)
-    #    env = bench.Monitor(env, logger.get_dir() and os.path.join(logger.get_dir(), str(rank)))
-    #    gym.logger.setLevel(logging.WARN)
+       env = bench.Monitor(env, logger.get_dir() and os.path.join(logger.get_dir(), str(rank)))
+       gym.logger.setLevel(logging.WARN)
        return env
 
    set_global_seeds(seed)
