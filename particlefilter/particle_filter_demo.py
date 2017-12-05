@@ -16,10 +16,10 @@ h = 20
 w = 20
 world_size = np.array([w,h]) # Note we consistently use w,h and x,y
 
-num_particles = 500
+num_particles = 5000
 num_sources = 3
 
-fusion_range = 3
+fusion_range = 5
 
 # source_strength = 2.2e6 * 100 # 100 u Curies in CPM
 source_strength = 100
@@ -40,8 +40,8 @@ particle_filter = ParticleFilter.ParticleFilter(
     num_particles=num_particles,
     fusion_range=fusion_range)
 
-particle_filter.render(sensor_location, source_locations)
-plt.pause(1)
+# particle_filter.render(sensor_location, source_locations)
+# plt.pause(1)
 
 # Take a reading
 for t in range(300):
@@ -51,7 +51,8 @@ for t in range(300):
     reading = np.round(np.sum(source_expected_intensity))
 
     particle_filter.step(reading, sensor_location)
-    particle_filter.render(sensor_location, source_locations)
+    # particle_filter.render(sensor_location, source_locations)
+    # plt.pause(.01)
 
     # sensor_location += [0.06, 0.05+np.cos(t)/2]
     # sensor_location = np.random.randint(low=0, high=w, size=[1,2])
@@ -65,7 +66,6 @@ for t in range(300):
 
     sensor_location = world_coord.reshape([1,2])
 
-    plt.pause(.01)
-
+particle_filter.render(sensor_location, source_locations, render_heatmap=False)
 plt.ioff()
 plt.show()
