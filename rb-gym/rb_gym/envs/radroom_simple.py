@@ -117,6 +117,8 @@ class RadRoomSimple(gym.Env):
         # Create 'heatmap' of robot location
         loc_map = np.zeros_like(heatmap)
         int_location = np.floor(self.map_sub * self.loc).ravel().astype(np.int)
+        if int_location[0] == self.bounds[0]: int_location -= 1
+        if int_location[1] == self.bounds[1]: int_location -= 1
         loc_map[int_location[0], int_location[1]] = 1
 
         # Create Observation
