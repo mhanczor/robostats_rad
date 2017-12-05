@@ -17,9 +17,9 @@ import gym
 from particlefilter.ParticleFilter import ParticleFilter
 
 
-STEPSIZE = 1
-PI = 3.141592653589
-MOVERR = 0.1 # Std Dev of the movements
+STEPSIZE = .5
+PI = math.pi
+MOVERR = STEPSIZE / 10 # Std Dev of the movements
 
 class RadRoomSimple(gym.Env):
 
