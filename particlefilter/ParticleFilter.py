@@ -56,6 +56,8 @@ class ParticleFilter():
     def fit_gaussian(self, num_sources, use_only_seen_particles=True):
         """Fit a guassian mixture model to the data. Returns the means and covariances."""
         particles = self.particle_locations[self.seen_particles] if use_only_seen_particles else self.particle_locations
+        if len(particles) < 5:
+            return None, None
         gmm = mixture.GaussianMixture(n_components=num_sources, covariance_type='full').fit(particles)
         means = gmm.means_
         covariances = gmm.covariances_
@@ -146,7 +148,7 @@ class ParticleFilter():
         ax.scatter(self.particle_locations[:,0], self.particle_locations[:,1], s=scaled_weights, c='k')
 
         if source_locations is not None:
-            ax.scatter(source_locations[:,0], source_locations[:,1], c='g', marker='x')
+            ax.scatter(source_locations[:,0], source_locations[:,1], s=100, c='r', marker='+')
 
         if sensor_location is not None:
             ax.scatter(sensor_location[:,0], sensor_location[:,1], c='c', marker='o')

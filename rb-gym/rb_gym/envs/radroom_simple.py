@@ -25,7 +25,7 @@ MOVERR = STEPSIZE / 10 # Std Dev of the movements
 
 class RadRoomSimple(gym.Env):
 
-    def __init__(self, world_size=20, num_sources=1, strength=100, seed=None, vis=False, max_iters=300, map_sub=1):
+    def __init__(self, world_size=20, num_sources=3, strength=100, seed=None, vis=False, max_iters=300, map_sub=1):
         self._seed(seed)
         self.num_sources = num_sources
         self.vis = vis
@@ -59,7 +59,7 @@ class RadRoomSimple(gym.Env):
         self.done = False
 #        print('resest')
 
-        self.strengths += self.np_random.uniform(-10, 10, self.num_sources)
+        self.strengths += self.np_random.uniform(-10, 10, [self.num_sources,1])
 
         # Set the source locations [s,x,y]
         for i in range(self.num_sources):
@@ -124,25 +124,25 @@ class RadRoomSimple(gym.Env):
         # make a prediction, see how far it is from the nearest source ( there can only be one per source??) and then get a score based on that
         prediction_made = True
         means, covariances = self.PF.fit_gaussian(self.num_sources)
-        for covar in covariances:
-            v = np.linalg.eigvals(covar)
-            v = 2 * np.sqrt(2*v)
+        if means is not None:
+            for covar in covariances:
+                v = np.linalg.eigvals(covar)
+                v = 2 * np.sqrt(2*v)
 
-            if np.max(v) > self.cov_thresh:
-                prediction_made = False
-                break
+                if np.max(v) > self.cov_thresh:
+                    prediction_made = False
+                    break
 
-        # Make a prediction if all covariances are small, or we reached max_steps
-        if prediction_made or self.steps > self.max_steps:
-            # match each prediction with nearest source, without replacement
-            pred_nn, source_nn = util.greedy_nearest_neighbor(means, self.sources)
-            # compute distance
-            dist = np.linalg.norm(pred_nn - source_nn, keepdims=True)
-            # reward for each source decays with distance from source as a gaussian
-            reward += 100 * gaussian(0,self.cov_thresh).pdf(dist) / self.num_sources
-            # Stop running
-            self.done = True
-
+            # Make a prediction if all covariances are small, or we reached max_steps
+            if prediction_made or self.steps > self.max_steps:
+                # match each prediction with nearest source, without replacement
+                pred_nn, source_nn = util.greedy_nearest_neighbor(means, self.sources)
+                # compute distance
+                dist = np.linalg.norm(pred_nn - source_nn, keepdims=True)
+                # reward for each source decays with distance from source as a gaussian
+                reward += 100 * gaussian(0,self.cov_thresh).pdf(dist) / self.num_sources
+                # Stop running
+                self.done = True
 
         obs = np.atleast_3d(obs)
 
@@ -176,7 +176,7 @@ class RadRoomSimple(gym.Env):
 
     def dist(self, p1, p2):
         return distance.cdist(p1, p2)
-    
+
     def append_map(self, heatmap):
         # Create 'heatmap' of robot location
         loc_map = np.zeros_like(heatmap)
