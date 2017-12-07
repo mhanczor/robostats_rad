@@ -67,10 +67,10 @@ class Model(object):
             )
             return policy_loss, value_loss, policy_entropy
 
-        def save(save_path):
+        def save(save_path, model_name):
             ps = sess.run(params)
             make_path(save_path)
-            joblib.dump(ps, '{}/atari_saved.model'.format(save_path))
+            joblib.dump(ps, '{}/{}.model'.format(save_path, model_name))
 
         def load(load_path):
             loaded_params = joblib.load(load_path)
@@ -110,7 +110,7 @@ class Runner(object):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce
         # IPC overhead
         self.obs = np.roll(self.obs, shift=-self.nc, axis=3)
-        self.obs[:, :, :, -self.nc:] = obs 
+        self.obs[:, :, :, -self.nc:] = obs
 
     def run(self):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [],[],[],[],[]
@@ -155,6 +155,7 @@ class Runner(object):
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
 def learn(policy, env, seed, nsteps=10, nstack=1, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-3, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=100):
+    save_interval=1000
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -183,8 +184,12 @@ def learn(policy, env, seed, nsteps=10, nstack=1, total_timesteps=int(80e6), vf_
             logger.record_tabular("explained_variance", float(ev))
             logger.record_tabular("reward", float(np.sum(rewards)))
             logger.dump_tabular()
+        if update % save_interval == 0 and update > 0:
+            save_path = '/home/daniel/Documents/saved_models'
+            model_name = '%09d_rad.model' % update
+            model.save(save_path, model_name)
     env.close()
-    model.save('/home/hades/Documents/Robo_Stats/Final_Project/radbot_gym/saved_models')
+    model.save('/home/daniel/Documents/saved_models', 'final_rad.model')
 
 if __name__ == '__main__':
     main()
