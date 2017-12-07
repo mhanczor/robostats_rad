@@ -12,7 +12,7 @@ from policies import CnnPolicy, LstmPolicy, RadLstmPolicy
 import numpy as np
 
 import matplotlib.pyplot as plt
-#plt.ion()
+plt.ion()
 
 
 def train(env_id, num_timesteps, seed, policy, lrschedule, num_cpu):
@@ -83,21 +83,21 @@ def play(env_id, num_timesteps, policy, load_path=None):
     obs = update_obs(obs)
     states = model.initial_state
     dones = False
-    
+
     for _ in range(num_timesteps):
         env.render()
-        plt.show()
+        plt.pause(0.01)
         # obs, states, rewards, masks, actions, values = runner.run()
         actions, values, states = model.step(obs, states, [dones])
         obs, rewards, dones, _ = env.step(actions)
         obs = update_obs(obs)
 
-        if dones:
-            break
-        
-    env.render()
-    plt.show()
-#    plt.pause(2)
+        # if dones:
+            # break
+
+    # env.render()
+    # plt.show
+    plt.pause(10)
 #    env.close()
 
 
@@ -109,7 +109,7 @@ def main():
     parser.add_argument('--filepath', help='Model Filepath', default='/home/hades/Documents/Robo_Stats/Final_Project/radbot_gym/saved_models/atari_saved.model')
     parser.add_argument('--policy', help='Policy architecture', choices=['cnn', 'lstm', 'radlstm'], default='radlstm')
     parser.add_argument('--lrschedule', help='Learning rate schedule', choices=['constant', 'linear'], default='constant')
-    parser.add_argument('--num-timesteps', type=int, default=int(1e4))
+    parser.add_argument('--num-timesteps', type=int, default=int(1e20))
     parser.add_argument('--mode', help='Mode', choices=['train', 'play'], default='play')
     args = parser.parse_args()
 
